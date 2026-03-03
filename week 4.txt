@@ -1,0 +1,330 @@
+# Week 4 Results Analysis & Week 5 Recommendations
+
+## Week 4 Results Summary
+
+| Function | Input Point | Result | Previous Best | Change | Status |
+|----------|-------------|--------|---------------|--------|--------|
+| F1 (2D) | [0.570, 0.550] | 2.996e-07 | 1.820e-08 | -94% | ✗ WORSE |
+| F2 (2D) | [0.720, 0.950] | 0.483 | 0.611 | -21% | ✗ Declined |
+| F3 (3D) | [0.450, 0.650, 0.300] | -0.069 | -0.035 | -97% | ✗ WORSE |
+| F4 (4D) | [0.550, 0.450, 0.400, 0.280] | -3.583 | -4.030 | +11% | ✓ Improved |
+| F5 (4D) | [0.000, 1.000, 1.000, 0.950] | 3819.7 | 4440.5 | -14% | ✗ Declined |
+| F6 (5D) | [0.500, 0.200, 0.700, 1.000, 0.050] | -0.562 | -0.614 | +8% | ✓ Improved |
+| F7 (6D) | [0.005, 0.350, 0.500, 0.200, 0.450, 0.750] | 1.739 | 2.031 | -14% | ✗ Declined |
+| F8 (8D) | [0.050, 0.100, 0.020, 0.080, 1.000, 0.800, 0.500, 0.900] | 9.652 | 9.770 | -1.2% | ✗ Slight decline |
+
+**Overall: 2/8 improved, 6/8 declined**
+
+---
+
+## Detailed Analysis by Function
+
+### Function 1: Radiation Detection - MOVED TOO FAR
+
+**Week 3 breakthrough:** [0.584, 0.536] → 1.82e-08  
+**Week 4 attempt:** [0.570, 0.550] → 2.996e-07 (16x WORSE!)
+
+**Analysis:**
+```
+Distance moved: 0.021 (from breakthrough point)
+Direction: Left and up
+Result: Moved AWAY from peak
+
+Peak location: Near [0.584, 0.536]
+Refinement needed: MUCH smaller radius
+```
+
+**Strategy for Week 5:** Micro-adjustment, stay closer to [0.584, 0.536]
+
+---
+
+### Function 2: Noisy ML Model - STILL STRUGGLING
+
+**Best ever:** [0.703, 0.927] → 0.611  
+**Week 4:** [0.720, 0.950] → 0.483 (21% worse)
+
+**Analysis:**
+```
+Attempted: Push x2 higher (0.927 → 0.950)
+Result: Failed again
+
+Pattern: Every exploration away from [0.703, 0.927] fails
+Noise level: High (consistent failures suggest noise, not bad strategy)
+```
+
+**Strategy for Week 5:** Return EXACTLY to best point, then tiny refinement
+
+---
+
+### Function 3: Drug Discovery - WORSE AGAIN
+
+**Best ever:** [0.493, 0.612, 0.340] → -0.035  
+**Week 4:** [0.450, 0.650, 0.300] → -0.069 (97% worse)
+
+**Analysis:**
+```
+Moved from best [0.493, 0.612, 0.340]
+To: [0.450, 0.650, 0.300]
+Changes: All three dimensions shifted
+
+Result: Worse
+Conclusion: Best point [0.493, 0.612, 0.340] is likely LOCAL optimum
+Need different strategy
+```
+
+**Strategy for Week 5:** Try completely different region (exploration)
+
+---
+
+### Function 4: Warehouse - IMPROVEMENT! ✓
+
+**Best ever (before):** [0.578, 0.429, 0.426, 0.249] → -4.030  
+**Week 4:** [0.550, 0.450, 0.400, 0.280] → -3.583 ✓ (11% better!)
+
+**Analysis:**
+```
+Success! First improvement in 2 iterations
+Moved slightly away from previous best
+New best: -3.583
+
+Pattern: Moderate values (0.3-0.6) consistently better
+Strategy worked: Return to moderate region
+```
+
+**Strategy for Week 5:** Continue refinement near new best
+
+---
+
+### Function 5: Chemical Process - BOUNDARY NOT OPTIMAL
+
+**Best ever:** [0.000, 1.000, 1.000, 1.000] → 4440.5  
+**Week 4:** [0.000, 1.000, 1.000, 0.950] → 3819.7 (14% worse)
+
+**Analysis:**
+```
+Tested sensitivity: x4 = 1.0 vs 0.95
+Result: x4 = 1.0 is BETTER (boundary is optimal!)
+
+Confirmed: [0, 1, 1, 1] is likely global optimum
+Drop in performance: 4440 → 3820 with x4 = 0.95
+
+Conclusion: x4 MUST be at 1.0
+```
+
+**Strategy for Week 5:** Test other dimensions, keep x4 = 1.0
+
+---
+
+### Function 6: Cake Recipe - STEADY PROGRESS ✓
+
+**Progression:**
+- Week 2: -0.714
+- Week 3: -0.614 (+14%)
+- Week 4: -0.562 (+8%) ✓
+
+**Analysis:**
+```
+Consistent improvement: -0.714 → -0.614 → -0.562
+Getting closer to 0 (goal)
+
+Week 4 point: [0.500, 0.200, 0.700, 1.000, 0.050]
+Key: x4 = 1.0 consistently helps
+
+Strategy working: Keep x4 = 1, tune others
+```
+
+**Strategy for Week 5:** Continue refinement, maintain x4 = 1.0
+
+---
+
+### Function 7: ML Hyperparameters - STILL TOO HIGH x1
+
+**Best ever:** [0.010, 0.378, 0.490, 0.229, 0.406, 0.728] → 2.031  
+**Week 4:** [0.005, 0.350, 0.500, 0.200, 0.450, 0.750] → 1.739 (14% worse)
+
+**Analysis:**
+```
+Changed x1: 0.010 → 0.005 (went lower)
+Result: WORSE (1.739 vs 2.031)
+
+Hypothesis: x1 = 0.010 is OPTIMAL
+Going lower (0.005) or higher (0.111 in Week 3) both fail
+
+Conclusion: x1 ≈ 0.010 is critical value
+```
+
+**Strategy for Week 5:** Return x1 to 0.010 EXACTLY
+
+---
+
+### Function 8: High-Dimensional - SLIGHT DECLINE
+
+**Progression:**
+- Week 2: 9.598
+- Week 3: 9.770 (+1.8%)
+- Week 4: 9.652 (-1.2%)
+
+**Analysis:**
+```
+Week 3: x5 = 1.0 helped (9.598 → 9.770)
+Week 4: Kept x5 = 1.0, adjusted others → 9.652 (slight decline)
+
+Conclusion: x5 = 1.0 is good, but other dims need better tuning
+High-D optimization is slow
+```
+
+**Strategy for Week 5:** Keep x5 = 1.0, focus on dims 1-4
+
+---
+
+## Week 5 Recommended Next Points
+
+### Function 1: Micro-refinement around breakthrough
+```python
+Best: [0.584, 0.536] → 1.82e-08
+Week 4 failed: [0.570, 0.550]
+
+Strategy: TINY adjustment (radius 0.01, not 0.02)
+Next: [0.580, 0.540]  # Much closer to best
+
+Rationale: Week 4 moved too far, refine more carefully
+```
+
+### Function 2: Return to best, then minimal adjustment
+```python
+Best: [0.703, 0.927] → 0.611
+Every departure fails due to noise
+
+Strategy: Stay VERY close to best
+Next: [0.700, 0.930]  # Minimal shift
+
+Rationale: Noise makes exploration risky, exploit proven region
+```
+
+### Function 3: Try completely new region
+```python
+Best: [0.493, 0.612, 0.340] → -0.035
+Local refinement keeps failing
+
+Strategy: EXPLORATION in new region
+Next: [0.700, 0.300, 0.600]  # Different region entirely
+
+Rationale: Might be stuck in local optimum, try elsewhere
+```
+
+### Function 4: Refine new best point
+```python
+New best: [0.550, 0.450, 0.400, 0.280] → -3.583 ✓
+
+Strategy: Local refinement
+Next: [0.530, 0.470, 0.380, 0.300]  # Small adjustments
+
+Rationale: Found good region, continue refining
+```
+
+### Function 5: Test x3 sensitivity (keep x4=1.0)
+```python
+Confirmed best: [0.000, 1.000, 1.000, 1.000] → 4440.5
+Week 4 showed x4 must be 1.0
+
+Strategy: Test x3 boundary (keep x2, x4 = 1.0)
+Next: [0.000, 1.000, 0.950, 1.000]  # Test x3
+
+Rationale: Verify if x3 also needs to be exactly 1.0
+```
+
+### Function 6: Continue gradual improvement
+```python
+Current best: [0.500, 0.200, 0.700, 1.000, 0.050] → -0.562 ✓
+Steady progress with x4 = 1.0
+
+Strategy: Refine while keeping x4 = 1.0
+Next: [0.550, 0.180, 0.720, 1.000, 0.030]  # Tune dims 1,2,3,5
+
+Rationale: Keep winning formula (x4=1), push toward 0
+```
+
+### Function 7: Return x1 to optimal value
+```python
+Best: [0.010, 0.378, 0.490, 0.229, 0.406, 0.728] → 2.031
+Week 4 x1=0.005 failed
+
+Strategy: Return x1 to 0.010, refine others
+Next: [0.010, 0.360, 0.510, 0.210, 0.430, 0.740]  # x1=0.010
+
+Rationale: x1=0.010 is critical, slight adjustments to others
+```
+
+### Function 8: Keep x5=1.0, focus on important dims
+```python
+Current: [0.050, 0.100, 0.020, 0.080, 1.000, 0.800, 0.500, 0.900] → 9.652
+
+Strategy: Keep x5=1.0, lower dims 1-4 further
+Next: [0.030, 0.070, 0.015, 0.050, 1.000, 0.850, 0.550, 0.920]
+
+Rationale: Lower dims 1-4 (previous best had low values here)
+          Keep x5=1.0, push x6,x8 higher
+```
+
+---
+
+## Summary Table: Week 5 Recommendations
+
+| Function | Next Point | Strategy | Confidence |
+|----------|-----------|----------|------------|
+| **F1** | [0.580, 0.540] | Micro-refinement | High |
+| **F2** | [0.700, 0.930] | Stay near best | Medium |
+| **F3** | [0.700, 0.300, 0.600] | New region exploration | Low |
+| **F4** | [0.530, 0.470, 0.380, 0.300] | Refine new best | High |
+| **F5** | [0.000, 1.000, 0.950, 1.000] | Test x3 boundary | High |
+| **F6** | [0.550, 0.180, 0.720, 1.000, 0.030] | Continue progress | High |
+| **F7** | [0.010, 0.360, 0.510, 0.210, 0.430, 0.740] | Return x1=0.010 | High |
+| **F8** | [0.030, 0.070, 0.015, 0.050, 1.000, 0.850, 0.550, 0.920] | Focus on key dims | Medium |
+
+---
+
+## Key Learnings from Week 4
+
+### 1. **Micro-refinement requires smaller steps** (F1)
+   - Moved 0.021 away → 16x worse
+   - Lesson: Near optimum, use radius < 0.01
+
+### 2. **Noise requires extreme caution** (F2)
+   - Every exploration fails
+   - Lesson: Stay very close to best in noisy functions
+
+### 3. **Boundary conditions matter** (F5)
+   - x4 = 0.95 vs 1.0 → 14% difference
+   - Lesson: Some functions have exact boundary optima
+
+### 4. **Critical dimensions exist** (F7)
+   - x1 = 0.005 or 0.111 fail, 0.010 works
+   - Lesson: Some dimensions have narrow optimal ranges
+
+### 5. **Incremental progress is valid** (F6)
+   - -0.714 → -0.614 → -0.562
+   - Lesson: Slow steady improvement is success
+
+### 6. **Local optima are real** (F3)
+   - Can't improve past -0.035 with local refinement
+   - Lesson: Sometimes need to explore elsewhere
+
+---
+
+## Expected Week 5 Outcomes
+
+**High confidence improvements (5/8):**
+- F1: Will improve (closer to peak)
+- F4: Will improve (refining winner)
+- F5: Will confirm x3=1.0 (verify boundary)
+- F6: Will improve (steady progress continues)
+- F7: Will improve significantly (x1=0.010 is key)
+
+**Medium confidence (2/8):**
+- F2: Should improve but noise is unpredictable
+- F8: Slow progress in 8D, small improvement likely
+
+**Low confidence (1/8):**
+- F3: Exploration gamble, could find better region or not
+
+**Predicted: 6-7 improvements out of 8**

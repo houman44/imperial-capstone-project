@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "functions": [
+    {
+      "function_id": 1,
+      "dims": 2,
+      "objective": "maximize"
+    },
+    {
+      "function_id": 2,
+      "dims": 2,
+      "objective": "maximize"
+    },
+    {
+      "function_id": 3,
+      "dims": 3,
+      "objective": "minimize"
+    },
+    {
+      "function_id": 4,
+      "dims": 4,
+      "objective": "minimize"
+    },
+    {
+      "function_id": 5,
+      "dims": 4,
+      "objective": "maximize"
+    },
+    {
+      "function_id": 6,
+      "dims": 5,
+      "objective": "minimize"
+    },
+    {
+      "function_id": 7,
+      "dims": 6,
+      "objective": "maximize"
+    },
+    {
+      "function_id": 8,
+      "dims": 8,
+      "objective": "maximize"
+    }
+  ]
+}
