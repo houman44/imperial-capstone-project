@@ -13,9 +13,11 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-from dataclasses import dataclass
+import logging
+import warnings
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Iterable, List, Sequence
+from typing import Dict, Iterable, List, Sequence, Tuple
 
 import numpy as np
 from scipy.stats import norm
@@ -167,6 +169,38 @@ def load_function_dataset(data_dir: Path, spec: FunctionSpec) -> tuple[np.ndarra
     return X, y
 
 
+# Thresholds for fit-quality checks
+LENGTH_SCALE_LOW = 1e-4
+LENGTH_SCALE_HIGH = 1e4
+EI_EXPLORATION_THRESHOLD = 1e-6  # Below this max EI, use random exploration
+
+
+@dataclass
+class GPFitQuality:
+    """Result of GP fit quality checks."""
+    convergence_ok: bool = True
+    length_scale_ok: bool = True
+    warnings: List[str] = field(default_factory=list)
+
+
+def _check_gp_fit_quality(gp: GaussianProcessRegressor, dims: int) -> GPFitQuality:
+    """Check GP fit quality: convergence and length-scale bounds."""
+    result = GPFitQuality()
+    try:
+        # Access Matern kernel (k2 in C * Matern)
+        matern = gp.kernel_.k2
+        ls = np.atleast_1d(matern.length_scale)
+        for i, scale in enumerate(ls):
+            if scale <= LENGTH_SCALE_LOW or scale >= LENGTH_SCALE_HIGH:
+                result.length_scale_ok = False
+                result.warnings.append(
+                    f"length_scale[{i}]={scale:.2e} near bounds ({LENGTH_SCALE_LOW}, {LENGTH_SCALE_HIGH})"
+                )
+    except (AttributeError, TypeError) as e:
+        result.warnings.append(f"Could not check length scales: {e}")
+    return result
+
+
 def expected_improvement(X: np.ndarray, gp: GaussianProcessRegressor, y_best: float, xi: float) -> np.ndarray:
     mu, sigma = gp.predict(X, return_std=True)
     mu = np.asarray(mu).reshape(-1)
@@ -188,10 +222,14 @@ def suggest_point(
     n_candidates: int,
     xi: float,
     random_seed: int,
-) -> tuple[np.ndarray, float]:
+    function_id: int = 0,
+    verbose: bool = True,
+) -> Tuple[np.ndarray, float, GPFitQuality]:
     transformed_y = y if maximize else -y
-
     dims = X.shape[1]
+    y_best = float(np.max(transformed_y))
+    rng = np.random.default_rng(random_seed)
+
     kernel = C(1.0, (1e-3, 1e3)) * Matern(length_scale=np.ones(dims), nu=2.5)
     gp = GaussianProcessRegressor(
         kernel=kernel,
@@ -200,20 +238,68 @@ def suggest_point(
         n_restarts_optimizer=5,
         random_state=random_seed,
     )
-    gp.fit(X, transformed_y)
 
-    rng = np.random.default_rng(random_seed)
+    # Capture GP convergence warnings explicitly
+    gp_warnings: List[str] = []
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        gp.fit(X, transformed_y)
+        for _w in w:
+            msg = str(_w.message)
+            gp_warnings.append(f"{_w.category.__name__}: {msg}")
+            if verbose:
+                logging.warning(f"F{function_id} GP fit: {msg}")
+
+    fit_quality = _check_gp_fit_quality(gp, dims)
+    fit_quality.warnings = gp_warnings + fit_quality.warnings
+    fit_quality.convergence_ok = not any("ConvergenceWarning" in _w for _w in gp_warnings)
+
+    # Poor fit: retry with more optimizer restarts
+    if not fit_quality.convergence_ok or not fit_quality.length_scale_ok:
+        if verbose:
+            logging.info(f"F{function_id} retrying GP fit with n_restarts=10")
+        gp_retry = GaussianProcessRegressor(
+            kernel=kernel,
+            alpha=1e-6,
+            normalize_y=True,
+            n_restarts_optimizer=10,
+            random_state=random_seed + 1000,
+        )
+        with warnings.catch_warnings(record=True) as w2:
+            warnings.simplefilter("always")
+            gp_retry.fit(X, transformed_y)
+            for _w in w2:
+                if verbose:
+                    logging.warning(f"F{function_id} GP retry: {_w.message}")
+        gp = gp_retry
+        fit_quality = _check_gp_fit_quality(gp, dims)
+
     candidates = rng.uniform(0.0, 1.0, size=(n_candidates, dims))
-    ei = expected_improvement(candidates, gp, y_best=float(np.max(transformed_y)), xi=xi)
+    ei = expected_improvement(candidates, gp, y_best=y_best, xi=xi)
+    max_ei = float(np.max(ei))
+
+    # Explicit exploration when EI is uniformly low (surrogate uninformative)
+    if max_ei < EI_EXPLORATION_THRESHOLD:
+        if verbose:
+            logging.info(
+                f"F{function_id} max EI={max_ei:.2e} < {EI_EXPLORATION_THRESHOLD}, "
+                "using random exploration"
+            )
+        p = rng.uniform(0.0, 1.0, size=(dims,))
+        # Ensure not too close to existing points
+        for _ in range(100):
+            if not np.any(np.all(np.isclose(X, p, atol=1e-6), axis=1)):
+                return p, 0.0, fit_quality
+            p = rng.uniform(0.0, 1.0, size=(dims,))
+        return p, 0.0, fit_quality
 
     order = np.argsort(ei)[::-1]
     for idx in order:
         p = candidates[idx]
         if not np.any(np.all(np.isclose(X, p, atol=1e-6), axis=1)):
-            return p, float(ei[idx])
+            return p, float(ei[idx]), fit_quality
 
-    # Degenerate fallback: random point if all candidates near existing points.
-    return rng.uniform(0.0, 1.0, size=(dims,)), 0.0
+    return rng.uniform(0.0, 1.0, size=(dims,)), 0.0, fit_quality
 
 
 def write_recommendations_csv(
@@ -235,25 +321,32 @@ def recommend_next_round(
     n_candidates: int,
     xi: float,
     random_seed: int,
+    verbose: bool = True,
 ) -> None:
     ensure_store_exists(data_dir)
     specs = load_specs(data_dir)
+    logging.basicConfig(level=logging.INFO if verbose else logging.WARNING, format="%(message)s")
 
     results: List[tuple[int, np.ndarray, float]] = []
     print(f"Generating recommendations for round {round_id}")
     for spec in specs:
         X, y = load_function_dataset(data_dir, spec)
-        point, score = suggest_point(
+        point, score, fit_quality = suggest_point(
             X,
             y,
             maximize=(spec.objective == "maximize"),
             n_candidates=n_candidates,
             xi=xi,
             random_seed=random_seed + spec.function_id,
+            function_id=spec.function_id,
+            verbose=verbose,
         )
         results.append((spec.function_id, point, score))
         pt_str = "-".join(f"{x:.6f}" for x in point)
         print(f"F{spec.function_id}: {pt_str}")
+        if verbose and fit_quality.warnings:
+            for w in fit_quality.warnings[:2]:  # Limit to first 2 per function
+                print(f"  [fit] {w}")
 
     out_file = data_dir / "submissions" / f"round_{round_id}_next_queries.csv"
     write_recommendations_csv(out_file, results)
@@ -439,6 +532,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_recommend.add_argument("--n-candidates", type=int, default=5000)
     p_recommend.add_argument("--xi", type=float, default=0.01)
     p_recommend.add_argument("--seed", type=int, default=42)
+    p_recommend.add_argument("--quiet", action="store_true", help="Suppress fit-quality warnings and logs")
 
     subparsers.add_parser("status", help="Show data completeness per function")
     return parser
@@ -465,6 +559,7 @@ def main() -> None:
             n_candidates=args.n_candidates,
             xi=args.xi,
             random_seed=args.seed,
+            verbose=not getattr(args, "quiet", False),
         )
     elif args.command == "status":
         print_status(data_dir=data_dir)

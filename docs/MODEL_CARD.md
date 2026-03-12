@@ -32,6 +32,8 @@
 - Gaussian Process regression (Matérn kernel, sklearn).  
 - Expected Improvement acquisition.  
 - Random candidate sampling with EI maximization.  
+- GP fit-quality checks: convergence warnings and length-scale bounds; retry with n_restarts=10 when poor.  
+- Explicit random exploration when max EI < 1e-6 (surrogate uninformative).  
 - Optional (in legacy code): SVM pre-screening, gradient ascent on GP surrogate.
 
 ## Performance
@@ -51,8 +53,8 @@
 
 **Constraints and failure modes:**  
 - Sparse data in high dimensions (e.g. F8) can lead to unreliable surrogates.  
-- GP fitting can fail to converge (kernel bounds, numerical issues).  
-- EI can favor exploration in uninformative regions when the surrogate is poor.  
+- GP fitting can fail to converge (kernel bounds, numerical issues); pipeline retries with more restarts and logs warnings.  
+- EI can favor exploration in uninformative regions when the surrogate is poor; pipeline falls back to random exploration when max EI < 1e-6.  
 - No explicit handling of heteroscedastic noise or non-stationarity.
 
 ## Ethical Considerations
