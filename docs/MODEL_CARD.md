@@ -25,7 +25,7 @@
 
 **Strategy across rounds:**  
 - **Rounds 1–5:** Data accumulated from initial submissions and legacy scripts. Hybrid strategies assigned by function: pure GP+EI for F1–F3; GP+SVM screening for F4, F6, F7; GP+gradient refinement for F5; full hybrid (SVM+GP+gradients) for F8.  
-- **Rounds 6–8:** Unified pipeline via `capstone_manager.py`: single GP+EI with ξ=0.01, n_candidates=5000. Strategy is consistent; per-function tuning (e.g. different acquisitions) was not reintroduced in later rounds.  
+- **Rounds 6–9:** Unified pipeline via `capstone_manager.py`: single GP+EI with ξ=0.01, n_candidates=5000. Strategy is consistent; per-function tuning (e.g. different acquisitions) was not reintroduced in later rounds.  
 - **Evolution:** Early rounds relied on manual inspection and strategic reasoning (e.g. boundary tests for F5). Later rounds automated recommendations via the capstone manager. The pipeline supports CSV import of external results and incremental updates.
 
 **Techniques used:**  
@@ -37,7 +37,7 @@
 ## Performance
 
 **Summary across eight functions:**  
-- Best observed values (as of round 8): F1 (very small y, near zero); F2 (~0.08); F3 (~-0.09); F4 (~-10.3); F5 (6065 at [0,1,1,1], later round dropped); F6 (~-1.85); F7 (1.55); F8 (7.81).  
+- Best observed values (as of round 9): F1 (very small y, near zero); F2 (~0.05); F3 (~-0.08); F4 (~-24.0); F5 (3215.66 at [0.81, 0.83, 0.92, 0.99]); F6 (~-1.11); F7 (~1.89); F8 (5.79).  
 - Metrics: best y per function (max for maximize objectives, min for minimize). No formal aggregate metric; performance is assessed per function and per round.  
 - Variability: F5 and F7 showed large swings; F4 and F6 improved incrementally; F8 improved with more data.
 

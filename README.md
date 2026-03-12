@@ -1,10 +1,14 @@
-<<<<<<< HEAD
 # imperial-capstone-project
-Capstone project as part of the Imperial College AI/ML certification
-=======
-# BBO Capstone Project
+
+Capstone project as part of the Imperial College AI/ML certification.
+
+## BBO Capstone Project
 
 Black-Box Optimization capstone: iterative query submission and next-point recommendation for eight benchmark functions.
+
+## Approach
+
+Recommendations are generated using Bayesian optimization with a Gaussian Process (Matérn kernel) surrogate and Expected Improvement (EI) acquisition. See the [Model Card](docs/MODEL_CARD.md) for full details.
 
 ## Documentation
 
@@ -100,4 +104,3 @@ Only the first `N` dimensions for each function are read, where `N` is defined i
 
 Your older one-off scripts were moved to `src/legacy/` (no deletion), so you can still reference them if needed.  
 The intended path going forward is to use `src/capstone_manager.py` as the source of truth.
->>>>>>> b1b396e (Initial commit: BBO capstone with datasheet and model card)
