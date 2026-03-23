@@ -6,7 +6,7 @@
 
 **Type:** Black-box optimization pipeline for iterative query recommendation.
 
-**Version:** 1.0 (as of capstone submission). Implemented in `src/capstone_manager.py`.
+**Version:** 1.1 (final capstone submission). Implemented in `src/capstone_manager.py`. Legacy exploratory code may exist under `src/legacy/`; the supported path is the unified manager + CSV workflow.
 
 ## Intended Use
 
@@ -38,10 +38,27 @@
 
 ## Performance
 
-**Summary across eight functions:**  
-- Best observed values (as of round 9): F1 (very small y, near zero); F2 (~0.05); F3 (~-0.08); F4 (~-24.0); F5 (3215.66 at [0.81, 0.83, 0.92, 0.99]); F6 (~-1.11); F7 (~1.89); F8 (5.79).  
-- Metrics: best y per function (max for maximize objectives, min for minimize). No formal aggregate metric; performance is assessed per function and per round.  
-- Variability: F5 and F7 showed large swings; F4 and F6 improved incrementally; F8 improved with more data.
+**Best observed scores (local mirror, `data/functions/` through round 8)**  
+
+These are the **best `y` achieved** over all rows currently stored per function (maximise = highest `y`; minimise = lowest `y`), per `data/metadata.json`.
+
+| Function | Objective | Best observed \(y\) | Round (where that best occurred) |
+|----------|-------------|---------------------|-----------------------------------|
+| F1 | maximise | `5.722038229264154e-26` | 8 |
+| F2 | maximise | `0.3594551047918857` | 1 |
+| F3 | minimise | `-0.16504019029582775` | 6 |
+| F4 | minimise | `-25.154033310264733` | 6 |
+| F5 | maximise | `6065.515500492326` | 6 |
+| F6 | minimise | `-2.152736614425762` | 1 |
+| F7 | maximise | `1.5518772385254398` | 7 |
+| F8 | maximise | `7.939020817385101` | 1 |
+
+**Qualitative snapshot (latest round-8 evaluations):** F1–F2 remain near-zero scale; F4 sits around −24.0 on the most recent row; F5’s latest round-8 evaluation is `3215.66` (not the global best); F6’s latest is about `−1.11`; F7’s latest is about `0.27`; F8’s latest is about `5.79`. Use the table above for **global best-so-far** in this repo.
+
+**Notes:**  
+- The **official capstone leaderboard** may differ if additional submissions exist only on the platform. Refresh this table if you re-import further rounds.  
+- No single aggregate metric is defined across functions (scales and objectives differ).  
+- **Qualitative pattern:** higher-dimensional functions (e.g. F8) can remain sensitive to exploration; boundary-heavy optima are common under box constraints.
 
 ## Assumptions and Limitations
 

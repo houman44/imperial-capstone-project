@@ -56,11 +56,17 @@ Data were collected across multiple submission rounds (weeks) as part of the cap
 
 ## Distribution and Maintenance
 
-**Where is the dataset available?**  
-The dataset is stored in the project repository under `data/functions/` (function_1.csv through function_8.csv). Metadata (function specs, objectives) is in `data/metadata.json`.
+**Canonical source vs this repository**  
+The **canonical evaluation channel** is the capstone’s external platform (participants submit queries; the platform returns `y`). This repository mirrors **exported CSV histories** under `data/functions/` and optional **round snapshots** under `data/history/` for reproducibility. It does **not** host the proprietary simulator code or full raw platform logs.
+
+**Large or sensitive data**  
+Per GitHub best practice, avoid committing very large files. Store small CSV snapshots of rounds you need to reproduce; describe any additional data sources externally in this datasheet and link them if public.
+
+**Local mirror paths**  
+`data/functions/` (function_1.csv through function_8.csv). Metadata (function specs, objectives) is in `data/metadata.json`.
 
 **Terms of use:**  
 Subject to the capstone project and platform terms. The data is for educational and portfolio purposes. External evaluation results (y values) were obtained by submitting to the capstone project portal.
 
 **Who maintains it?**  
-The project author maintains the dataset. Updates occur as new rounds are imported via `capstone_manager.py import-results`. Versioning is implicit through round numbers in the CSVs; no formal changelog is maintained.
+The project author maintains the dataset. Updates occur as new rounds are imported via `capstone_manager.py import-results` or rebuilt via `sync-history`. Versioning is implicit through round numbers in the CSVs; `data/history/round_*.csv` files provide an auditable sequence for the local mirror.

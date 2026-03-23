@@ -14,6 +14,7 @@ import argparse
 import csv
 import json
 import logging
+import re
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -118,7 +119,70 @@ def _spec_map(specs: Sequence[FunctionSpec]) -> Dict[int, FunctionSpec]:
     return {s.function_id: s for s in specs}
 
 
-def append_external_results(data_dir: Path, results_file: Path, round_override: int | None) -> None:
+def clear_function_history(data_dir: Path) -> None:
+    """Reset each function_*.csv to header only (keeps metadata.json)."""
+    ensure_store_exists(data_dir)
+    specs = load_specs(data_dir)
+    for spec in specs:
+        path = function_csv_path(data_dir, spec.function_id)
+        header = ["round", "source", *[f"x{i}" for i in range(1, spec.dims + 1)], "y"]
+        with path.open("w", newline="", encoding="utf-8") as f:
+            csv.writer(f).writerow(header)
+    print(f"Cleared per-function history under {data_dir / 'functions'}")
+
+
+def _history_csv_sort_key(path: Path) -> Tuple[int, int, str]:
+    """Sort key: canonical round_N_results.csv first by N, then other files by name."""
+    m = re.match(r"^round_(\d+)_results\.csv$", path.name, re.IGNORECASE)
+    if m:
+        return (0, int(m.group(1)), path.name)
+    m2 = re.match(r"^round(\d+)[._-]", path.name, re.IGNORECASE)
+    if m2:
+        return (0, int(m2.group(1)), path.name)
+    return (1, 0, path.name)
+
+
+def list_history_csvs(history_dir: Path) -> List[Path]:
+    if not history_dir.is_dir():
+        return []
+    paths = [p for p in history_dir.glob("*.csv") if not p.name.startswith(".")]
+    return sorted(paths, key=_history_csv_sort_key)
+
+
+def sync_history(data_dir: Path, history_dir: Path, *, dry_run: bool) -> None:
+    """
+    Rebuild data/functions/*.csv from CSV snapshots in history_dir.
+
+    Expected layout: one or more files named like round_1_results.csv, round_2_results.csv, ...
+    Each file should have columns function_id, round, source, x1..x8, y (same as import-results).
+
+    Files are applied in ascending round order (from filename). This gives a reproducible
+    history: commit data/history/*.csv under version control, then run sync-history after clone.
+    """
+    ensure_store_exists(data_dir)
+    files = list_history_csvs(history_dir)
+    if not files:
+        raise FileNotFoundError(
+            f"No CSV files found in {history_dir}. "
+            "Add round_N_results.csv files (see README) or pass --history-dir."
+        )
+
+    print("History files (order):")
+    for p in files:
+        print(f"  - {p.name}")
+
+    if dry_run:
+        print("Dry run: no changes written.")
+        return
+
+    clear_function_history(data_dir)
+    total = 0
+    for results_file in files:
+        total += append_external_results(data_dir, results_file, round_override=None)
+    print(f"Sync complete. Imported {len(files)} file(s), {total} total row(s).")
+
+
+def append_external_results(data_dir: Path, results_file: Path, round_override: int | None) -> int:
     ensure_store_exists(data_dir)
     specs = load_specs(data_dir)
     by_id = _spec_map(specs)
@@ -147,6 +211,7 @@ def append_external_results(data_dir: Path, results_file: Path, round_override: 
             inserted += 1
 
     print(f"Appended {inserted} rows from: {results_file}")
+    return inserted
 
 
 def load_function_dataset(data_dir: Path, spec: FunctionSpec) -> tuple[np.ndarray, np.ndarray]:
@@ -535,6 +600,21 @@ def build_parser() -> argparse.ArgumentParser:
     p_recommend.add_argument("--quiet", action="store_true", help="Suppress fit-quality warnings and logs")
 
     subparsers.add_parser("status", help="Show data completeness per function")
+
+    p_sync = subparsers.add_parser(
+        "sync-history",
+        help="Rebuild data/functions/*.csv from CSV snapshots in a history directory",
+    )
+    p_sync.add_argument(
+        "--history-dir",
+        default="data/history",
+        help="Directory containing round_N_results.csv files (default: data/history)",
+    )
+    p_sync.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="List files that would be imported without modifying the store",
+    )
     return parser
 
 
@@ -551,6 +631,12 @@ def main() -> None:
             data_dir=data_dir,
             results_file=Path(args.results_file),
             round_override=args.round,
+        )
+    elif args.command == "sync-history":
+        sync_history(
+            data_dir=data_dir,
+            history_dir=Path(args.history_dir),
+            dry_run=args.dry_run,
         )
     elif args.command == "recommend":
         recommend_next_round(
